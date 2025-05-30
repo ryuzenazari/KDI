@@ -1,9 +1,9 @@
 # KONFIGURASI MIKROTIK ROUTEROS 7.8
-## PROJECT JARINGAN KANTOR - OSPF, VPN, DNS, NAT
+## PROJECT JARINGAN KANTOR - OSPF, VPN, DNS, NAT (FIXED)
 
 ---
 
-### INFORMASI PROJECT
+## INFORMASI PROJECT
 
 **Topology:**
 - 3 Kantor: Pusat, Cabang 1, Cabang 2
@@ -13,6 +13,7 @@
 - Internet Gateway: 192.168.204.2
 
 **IP Address Schema:**
+
 | Device | Interface | IP Address | Keterangan |
 |--------|-----------|------------|------------|
 | R1 | ETH0 | 12.12.12.1/24 | Link ke R2 |
@@ -38,13 +39,13 @@
 ## KONFIGURASI R1 (ROUTER OSPF CORE)
 
 ### Reset dan Identity
-```
+```bash
 /system reset-configuration no-defaults=yes skip-backup=yes
 /system identity set name="R1"
 ```
 
 ### IP Address Configuration
-```
+```bash
 /ip address
 add address=12.12.12.1/24 interface=ether1 comment="Link ke R2"
 add address=13.13.13.1/24 interface=ether2 comment="Link ke R3"
@@ -52,7 +53,7 @@ add address=1.1.1.1/24 interface=ether3 comment="Link ke R-Cabang-1"
 ```
 
 ### OSPF Configuration (RouterOS 7.x)
-```
+```bash
 /routing ospf instance
 add name=default version=2 router-id=1.1.1.1
 
@@ -70,13 +71,13 @@ add area=backbone networks=1.1.1.0/24 comment="Network ke R-Cabang-1"
 ## KONFIGURASI R2 (ROUTER OSPF CORE)
 
 ### Reset dan Identity
-```
+```bash
 /system reset-configuration no-defaults=yes skip-backup=yes
 /system identity set name="R2"
 ```
 
 ### IP Address Configuration
-```
+```bash
 /ip address
 add address=12.12.12.2/24 interface=ether1 comment="Link ke R1"
 add address=23.23.23.2/24 interface=ether2 comment="Link ke R3"
@@ -84,7 +85,7 @@ add address=2.2.2.2/24 interface=ether3 comment="Link ke R-Cabang-2"
 ```
 
 ### OSPF Configuration
-```
+```bash
 /routing ospf instance
 add name=default version=2 router-id=2.2.2.2
 
@@ -102,13 +103,13 @@ add area=backbone networks=2.2.2.0/24 comment="Network ke R-Cabang-2"
 ## KONFIGURASI R3 (INTERNET GATEWAY + DNS SERVER)
 
 ### Reset dan Identity
-```
+```bash
 /system reset-configuration no-defaults=yes skip-backup=yes
 /system identity set name="R3"
 ```
 
 ### IP Address Configuration
-```
+```bash
 /ip address
 add address=13.13.13.3/24 interface=ether1 comment="Link ke R1"
 add address=23.23.23.3/24 interface=ether2 comment="Link ke R2"
@@ -117,13 +118,13 @@ add address=4.4.4.3/24 interface=ether4 comment="DNS Server Network"
 ```
 
 ### Internet Connection
-```
+```bash
 /ip dhcp-client
 add interface=ether5 disabled=no comment="Internet Connection"
 ```
 
 ### OSPF Configuration
-```
+```bash
 /routing ospf instance
 add name=default version=2 router-id=3.3.12.3
 
@@ -137,14 +138,14 @@ add area=backbone networks=3.3.12.0/24 comment="Network ke R-Pusat"
 ```
 
 ### Default Route Distribution
-```
+```bash
 /routing ospf instance
 set default redistribute=connected,static,bgp,rip
 set default originate-default=always
 ```
 
 ### DNS Server Configuration
-```
+```bash
 /ip dns
 set servers=8.8.8.8,8.8.4.4 allow-remote-requests=yes
 
@@ -153,14 +154,14 @@ add name=kantorpusat.co.id address=3.3.12.13 comment="Domain untuk R-Pusat"
 ```
 
 ### NAT Configuration
-```
+```bash
 /ip firewall nat
 add chain=srcnat out-interface=ether5 action=masquerade comment="Internet NAT - Masquerade to Internet"
 add chain=srcnat dst-address=!192.168.0.0/16 action=masquerade comment="Masquerade all non-private traffic"
 ```
 
 ### Firewall Configuration
-```
+```bash
 /ip firewall filter
 add chain=input connection-state=established,related action=accept
 add chain=input connection-state=invalid action=drop
@@ -172,7 +173,7 @@ add chain=input action=drop
 ```
 
 ### Default Route
-```
+```bash
 /ip route
 add dst-address=0.0.0.0/0 gateway=192.168.204.2 comment="Default Route to Internet"
 ```
@@ -182,20 +183,20 @@ add dst-address=0.0.0.0/0 gateway=192.168.204.2 comment="Default Route to Intern
 ## KONFIGURASI R-CABANG-1 (KANTOR CABANG 1)
 
 ### Reset dan Identity
-```
+```bash
 /system reset-configuration no-defaults=yes skip-backup=yes
 /system identity set name="R-Cabang-1"
 ```
 
 ### IP Address Configuration
-```
+```bash
 /ip address
 add address=1.1.1.11/24 interface=ether1 comment="Link ke R1"
 add address=192.168.1.11/24 interface=ether2 comment="LAN Cabang-1"
 ```
 
 ### OSPF Configuration
-```
+```bash
 /routing ospf instance
 add name=default version=2 router-id=192.168.1.11
 
@@ -208,7 +209,7 @@ add area=backbone networks=192.168.1.0/24 comment="LAN Cabang-1"
 ```
 
 ### DHCP Server Configuration
-```
+```bash
 /ip pool
 add name=pool-cabang1 ranges=192.168.1.20-192.168.1.100
 
@@ -220,14 +221,14 @@ add address=192.168.1.0/24 gateway=192.168.1.11 dns-server=4.4.4.3 comment="DHCP
 ```
 
 ### NAT Configuration
-```
+```bash
 /ip firewall nat
 add chain=srcnat src-address=192.168.1.0/24 out-interface=ether1 action=masquerade comment="NAT Cabang-1 to OSPF"
 add chain=srcnat src-address=192.168.1.0/24 action=masquerade comment="Masquerade all traffic from Cabang-1"
 ```
 
 ### VPN Office-to-Office Configuration
-```
+```bash
 /interface l2tp-client
 add name=vpn-to-pusat connect-to=3.3.12.13 user=cabang1 password=cabang1pass disabled=no comment="VPN Office to Office"
 
@@ -236,7 +237,7 @@ add dst-address=192.168.12.0/24 gateway=vpn-to-pusat comment="Route ke Server vi
 ```
 
 ### DNS Configuration
-```
+```bash
 /ip dns
 set servers=4.4.4.3
 ```
@@ -246,20 +247,20 @@ set servers=4.4.4.3
 ## KONFIGURASI R-CABANG-2 (KANTOR CABANG 2)
 
 ### Reset dan Identity
-```
+```bash
 /system reset-configuration no-defaults=yes skip-backup=yes
 /system identity set name="R-Cabang-2"
 ```
 
 ### IP Address Configuration
-```
+```bash
 /ip address
 add address=2.2.2.12/24 interface=ether1 comment="Link ke R2"
 add address=192.168.2.12/24 interface=ether2 comment="LAN Cabang-2"
 ```
 
 ### OSPF Configuration
-```
+```bash
 /routing ospf instance
 add name=default version=2 router-id=192.168.2.12
 
@@ -272,7 +273,7 @@ add area=backbone networks=192.168.2.0/24 comment="LAN Cabang-2"
 ```
 
 ### DHCP Server Configuration
-```
+```bash
 /ip pool
 add name=pool-cabang2 ranges=192.168.2.20-192.168.2.100
 
@@ -284,37 +285,37 @@ add address=192.168.2.0/24 gateway=192.168.2.12 dns-server=4.4.4.3 comment="DHCP
 ```
 
 ### NAT Configuration
-```
+```bash
 /ip firewall nat
 add chain=srcnat src-address=192.168.2.0/24 out-interface=ether1 action=masquerade comment="NAT Cabang-2 to OSPF"
 add chain=srcnat src-address=192.168.2.0/24 action=masquerade comment="Masquerade all traffic from Cabang-2"
 ```
 
 ### DNS Configuration
-```
+```bash
 /ip dns
 set servers=4.4.4.3
 ```
 
 ---
 
-## KONFIGURASI R-PUSAT (KANTOR PUSAT + VPN SERVER)
+## KONFIGURASI R-PUSAT (KANTOR PUSAT + VPN SERVER) - FIXED
 
 ### Reset dan Identity
-```
+```bash
 /system reset-configuration no-defaults=yes skip-backup=yes
 /system identity set name="R-Pusat"
 ```
 
 ### IP Address Configuration
-```
+```bash
 /ip address
 add address=3.3.12.13/24 interface=ether1 comment="Public IP/NAT"
 add address=192.168.12.13/24 interface=ether2 comment="LAN Pusat"
 ```
 
 ### OSPF Configuration
-```
+```bash
 /routing ospf instance
 add name=default version=2 router-id=192.168.12.13
 
@@ -327,7 +328,7 @@ add area=backbone networks=192.168.12.0/24 comment="LAN Pusat"
 ```
 
 ### DHCP Server Configuration
-```
+```bash
 /ip pool
 add name=pool-pusat ranges=192.168.12.20-192.168.12.100
 
@@ -338,48 +339,57 @@ add name=dhcp-pusat interface=ether2 address-pool=pool-pusat disabled=no
 add address=192.168.12.0/24 gateway=192.168.12.13 dns-server=4.4.4.3 comment="DHCP Network Pusat"
 ```
 
-### VPN L2TP Server Configuration
-```
+### VPN L2TP Server Configuration - FIXED
+```bash
+# Buat IP Pool untuk VPN terlebih dahulu
+/ip pool
+add name=vpn-pool ranges=192.168.100.10-192.168.100.20
+
+# Buat PPP Profile yang benar
 /ppp profile
-add name=vpn-profile local-address=192.168.100.1 remote-address=192.168.100.10-192.168.100.20
+add name=vpn-profile local-address=192.168.100.1 remote-address=vpn-pool use-encryption=yes
 
-/interface l2tp-server
-set enabled=yes default-profile=vpn-profile authentication=mschap2
+# Aktifkan L2TP Server (DIPERBAIKI - Command terpisah)
+/interface l2tp-server server
+set enabled=yes default-profile=vpn-profile authentication=mschap2 use-ipsec=no
 
+# Tambahkan PPP Secrets
 /ppp secret
-add name=cabang1 password=cabang1pass profile=vpn-profile comment="VPN Office to Office - R-Cabang-1"
-add name=pc2user password=pc2userpass profile=vpn-profile comment="VPN Client to Office - PC-2"
+add name=cabang1 password=cabang1pass profile=vpn-profile service=l2tp comment="VPN Office to Office - R-Cabang-1"
+add name=pc2user password=pc2userpass profile=vpn-profile service=l2tp comment="VPN Client to Office - PC-2"
 
+# Route untuk VPN Pool
 /ip route
 add dst-address=192.168.100.0/24 gateway=192.168.12.13 comment="Route VPN Pool"
 ```
 
 ### Port Forwarding dan NAT
-```
+```bash
 /ip firewall nat
 add chain=dstnat dst-address=3.3.12.13 dst-port=80 protocol=tcp action=dst-nat to-addresses=192.168.12.10 to-ports=80 comment="Web Server Port Forward"
 add chain=srcnat src-address=192.168.12.0/24 out-interface=ether1 action=masquerade comment="NAT Pusat to OSPF"
 add chain=srcnat src-address=192.168.12.0/24 action=masquerade comment="Masquerade all traffic from Pusat"
+add chain=srcnat src-address=192.168.100.0/24 action=masquerade comment="NAT VPN Pool"
 ```
 
-### Firewall Filter Rules
-```
+### Firewall Filter Rules - UPDATED
+```bash
 /ip firewall filter
 add chain=input connection-state=established,related action=accept
 add chain=input connection-state=invalid action=drop
+add chain=input dst-port=1701 protocol=udp action=accept comment="L2TP VPN"
+add chain=input dst-port=500,4500 protocol=udp action=accept comment="IPSec (jika diperlukan)"
 add chain=input protocol=icmp src-address=192.168.1.0/24 action=accept comment="Allow ping from Cabang-1"
 add chain=input protocol=icmp src-address=192.168.2.0/24 action=accept comment="Allow ping from Cabang-2"
 add chain=input protocol=icmp src-address=4.4.4.0/24 action=drop comment="Block ping from Public"
 add chain=input protocol=icmp action=drop comment="Block other ping"
 add chain=input protocol=ospf action=accept
-add chain=input dst-port=1701 protocol=udp action=accept comment="L2TP VPN"
-add chain=input dst-port=500,4500 protocol=udp action=accept comment="IPSec VPN"
 add chain=input dst-port=80 protocol=tcp action=accept comment="Web Server Access"
 add chain=input action=drop
 ```
 
 ### DNS Configuration
-```
+```bash
 /ip dns
 set servers=4.4.4.3
 ```
@@ -416,16 +426,14 @@ set servers=4.4.4.3
 
 ### 1. Pengujian Jaringan OSPF → PING Test
 **Command dari R-Cabang-1:**
-```
+```bash
 /ping 3.3.12.13 count=5
 ```
 **Command dari R-Cabang-2:**
-```
+```bash
 /ping 3.3.12.13 count=5
 ```
 **Expected Result:** PING berhasil (Reply from R-Pusat)
-
----
 
 ### 2. Pengujian Koneksi Internet → Distributed Default Route OSPF
 **Test dari PC1:**
@@ -436,8 +444,6 @@ set servers=4.4.4.3
 
 **Expected Result:** Website Google terbuka dengan normal
 
----
-
 ### 3. Pengujian Firewall DST-NAT → Akses Web Server via Domain
 **Test dari PC-Publik:**
 - Buka browser → http://kantorpusat.co.id
@@ -446,8 +452,6 @@ set servers=4.4.4.3
 - Buka browser → http://kantorpusat.co.id
 
 **Expected Result:** Web server dapat diakses dari kedua lokasi
-
----
 
 ### 4. Pengujian VPN → Akses Web Langsung ke IP Server
 **Test dari PC-1 (via VPN Office-to-Office):**
@@ -459,23 +463,21 @@ set servers=4.4.4.3
 
 **Expected Result:** Web server dapat diakses langsung via IP internal
 
----
-
 ### 5. Pengujian Firewall Filter R-Pusat → Selective Ping Access
 **Test dari PC-1:**
-```
+```bash
 ping 3.3.12.13
 ```
 **Expected:** SUCCESS ✅
 
 **Test dari PC-2:**
-```
+```bash
 ping 3.3.12.13
 ```
 **Expected:** SUCCESS ✅
 
 **Test dari PC-Publik:**
-```
+```bash
 ping 3.3.12.13
 ```
 **Expected:** FAILED ❌ (Blocked by firewall)
@@ -485,47 +487,73 @@ ping 3.3.12.13
 ## MONITORING DAN TROUBLESHOOTING COMMANDS
 
 ### Cek OSPF Status
-```
+```bash
 /routing ospf neighbor print
 /routing ospf lsa print
 /routing ospf state print
 ```
 
 ### Cek Routing Table
-```
+```bash
 /ip route print
 /ip route print where gateway=0.0.0.0
 ```
 
 ### Cek NAT Rules
-```
+```bash
 /ip firewall nat print
 ```
 
 ### Cek Firewall Status
-```
+```bash
 /ip firewall filter print
 /ip firewall connection print
 ```
 
-### Cek VPN Status
-```
+### Cek VPN Status - UPDATED
+```bash
 /ppp active print
 /interface l2tp-client print
+/interface l2tp-server print
+/ppp profile print
+/ppp secret print
+/ip pool print
 ```
 
 ### Network Testing
-```
+```bash
 /ping [destination_ip] count=5
 /tool traceroute [destination_ip]
 /tool bandwidth-test [destination_ip]
 ```
 
 ### Monitor Traffic
-```
+```bash
 /interface monitor-traffic ether1
 /tool torch interface=ether1
 ```
+
+### Debug VPN Issues
+```bash
+/log print where topics~"l2tp"
+/log print where topics~"ppp"
+/system logging add topics=l2tp,ppp action=memory
+```
+
+---
+
+## PERBEDAAN UTAMA DALAM PERBAIKAN VPN
+
+### Yang Diperbaiki:
+1. **IP Pool VPN:** Dibuat terlebih dahulu sebelum PPP profile
+2. **PPP Profile:** Menggunakan nama pool yang sudah dibuat
+3. **PPP Secrets:** Ditambahkan parameter `service=l2tp`
+4. **NAT Rules:** Ditambahkan NAT untuk VPN pool
+5. **Firewall Rules:** Diurutkan dengan benar untuk VPN access
+6. **Monitoring:** Ditambahkan command untuk debug VPN
+
+### Urutan Konfigurasi yang Benar:
+1. IP Pool → 2. PPP Profile → 3. L2TP Server → 4. PPP Secrets → 5. Routes → 6. NAT → 7. Firewall
 
 ---
 
@@ -536,9 +564,10 @@ ping 3.3.12.13
 3. **Test step-by-step** sesuai urutan pengujian project
 4. **Monitor log** jika ada masalah: `/log print`
 5. **Backup konfigurasi** setelah semua berjalan: `/export file=backup`
+6. **Untuk troubleshooting VPN**, gunakan command monitoring VPN yang sudah diperbaiki
 
 ---
 
-**SELESAI - KONFIGURASI LENGKAP MIKROTIK ROUTEROS 7.8**
+**SELESAI - KONFIGURASI LENGKAP MIKROTIK ROUTEROS 7.8 (FIXED)**
 
-*Project ini mencakup OSPF routing, VPN (Office-to-Office & Client-to-Office), DNS server, port forwarding, dan firewall security sesuai requirements.*
+*Project ini mencakup OSPF routing, VPN (Office-to-Office & Client-to-Office), DNS server, port forwarding, dan firewall security dengan perbaikan pada konfigurasi VPN server.*
