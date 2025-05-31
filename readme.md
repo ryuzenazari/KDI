@@ -378,7 +378,6 @@ add chain=srcnat src-address=192.168.100.0/24 action=masquerade comment="NAT VPN
 add chain=input connection-state=established,related action=accept
 add chain=input connection-state=invalid action=drop
 add chain=input dst-port=1701 protocol=udp action=accept comment="L2TP VPN"
-add chain=input dst-port=500,4500 protocol=udp action=accept comment="IPSec (jika diperlukan)"
 add chain=input protocol=icmp src-address=192.168.1.0/24 action=accept comment="Allow ping from Cabang-1"
 add chain=input protocol=icmp src-address=192.168.2.0/24 action=accept comment="Allow ping from Cabang-2"
 add chain=input protocol=icmp src-address=4.4.4.0/24 action=drop comment="Block ping from Public"
