@@ -1,5 +1,5 @@
 # KONFIGURASI MIKROTIK ROUTEROS 7.8
-## PROJECT JARINGAN KANTOR - OSPF, VPN, DNS, NAT (FIXED)
+## PROJECT JARINGAN KANTOR - OSPF, VPN, DNS, NAT
 
 ---
 
@@ -8,7 +8,7 @@
 **Topology:**
 - 3 Kantor: Pusat, Cabang 1, Cabang 2
 - Router Core: R1, R2, R3 (OSPF Network)
-- VPN: Office-to-Office dan Client-to-Office
+- VPN: Office-to-Office dan Client-to-Office (PPTP Protocol)
 - DNS Server: R3 dengan domain kantorpusat.co.id
 - Internet Gateway: 192.168.204.2
 
@@ -227,13 +227,13 @@ add chain=srcnat src-address=192.168.1.0/24 out-interface=ether1 action=masquera
 add chain=srcnat src-address=192.168.1.0/24 action=masquerade comment="Masquerade all traffic from Cabang-1"
 ```
 
-### VPN Office-to-Office Configuration
+### VPN Office-to-Office Configuration (PPTP)
 ```bash
-/interface l2tp-client
-add name=vpn-to-pusat connect-to=3.3.12.13 user=cabang1 password=cabang1pass disabled=no comment="VPN Office to Office"
+/interface pptp-client
+add name=vpn-to-pusat connect-to=3.3.12.13 user=cabang1 password=cabang1pass disabled=no comment="PPTP VPN Office to Office"
 
 /ip route
-add dst-address=192.168.12.0/24 gateway=vpn-to-pusat comment="Route ke Server via VPN Office to Office"
+add dst-address=192.168.12.0/24 gateway=vpn-to-pusat comment="Route ke Server via PPTP VPN Office to Office"
 ```
 
 ### DNS Configuration
@@ -299,7 +299,7 @@ set servers=4.4.4.3
 
 ---
 
-## KONFIGURASI R-PUSAT (KANTOR PUSAT + VPN SERVER) - FIXED
+## KONFIGURASI R-PUSAT (KANTOR PUSAT + VPN SERVER) - PPTP VERSION
 
 ### Reset dan Identity
 ```bash
@@ -339,24 +339,24 @@ add name=dhcp-pusat interface=ether2 address-pool=pool-pusat disabled=no
 add address=192.168.12.0/24 gateway=192.168.12.13 dns-server=4.4.4.3 comment="DHCP Network Pusat"
 ```
 
-### VPN L2TP Server Configuration - FIXED
+### VPN PPTP Server Configuration
 ```bash
 # Buat IP Pool untuk VPN terlebih dahulu
 /ip pool
 add name=vpn-pool ranges=192.168.100.10-192.168.100.20
 
-# Buat PPP Profile yang benar
+# Buat PPP Profile untuk PPTP
 /ppp profile
 add name=vpn-profile local-address=192.168.100.1 remote-address=vpn-pool use-encryption=yes
 
-# Aktifkan L2TP Server (DIPERBAIKI - Command terpisah)
-/interface l2tp-server server
-set enabled=yes default-profile=vpn-profile authentication=mschap2 use-ipsec=no
+# Aktifkan PPTP Server
+/interface pptp-server server
+set enabled=yes default-profile=vpn-profile authentication=mschap2
 
-# Tambahkan PPP Secrets
+# Tambahkan PPP Secrets untuk PPTP
 /ppp secret
-add name=cabang1 password=cabang1pass profile=vpn-profile service=l2tp comment="VPN Office to Office - R-Cabang-1"
-add name=pc2user password=pc2userpass profile=vpn-profile service=l2tp comment="VPN Client to Office - PC-2"
+add name=cabang1 password=cabang1pass profile=vpn-profile service=pptp comment="PPTP VPN Office to Office - R-Cabang-1"
+add name=pc2user password=pc2userpass profile=vpn-profile service=pptp comment="PPTP VPN Client to Office - PC-2"
 
 # Route untuk VPN Pool
 /ip route
@@ -372,12 +372,13 @@ add chain=srcnat src-address=192.168.12.0/24 action=masquerade comment="Masquera
 add chain=srcnat src-address=192.168.100.0/24 action=masquerade comment="NAT VPN Pool"
 ```
 
-### Firewall Filter Rules - UPDATED
+### Firewall Filter Rules - PPTP Version
 ```bash
 /ip firewall filter
 add chain=input connection-state=established,related action=accept
 add chain=input connection-state=invalid action=drop
-add chain=input dst-port=1701 protocol=udp action=accept comment="L2TP VPN"
+add chain=input dst-port=1723 protocol=tcp action=accept comment="PPTP VPN"
+add chain=input protocol=gre action=accept comment="GRE for PPTP"
 add chain=input protocol=icmp src-address=192.168.1.0/24 action=accept comment="Allow ping from Cabang-1"
 add chain=input protocol=icmp src-address=192.168.2.0/24 action=accept comment="Allow ping from Cabang-2"
 add chain=input protocol=icmp src-address=4.4.4.0/24 action=drop comment="Block ping from Public"
@@ -402,11 +403,11 @@ set servers=4.4.4.3
 - **Gateway:** 192.168.1.11
 - **DNS:** 4.4.4.3
 
-### PC2 (Client Cabang-2) 
+### PC2 (Client Cabang-2) - PPTP VPN Client
 - **IP Address:** 192.168.2.10/24
 - **Gateway:** 192.168.2.12
 - **DNS:** 4.4.4.3
-- **VPN Client:** Connect to 3.3.12.13 (username: pc2user, password: pc2userpass)
+- **PPTP VPN Client:** Connect to 3.3.12.13 (username: pc2user, password: pc2userpass)
 
 ### Server (Web Server Pusat)
 - **IP Address:** 192.168.12.10/24
@@ -432,7 +433,7 @@ set servers=4.4.4.3
 ```bash
 /ping 3.3.12.13 count=5
 ```
-**Expected Result:** PING berhasil (Reply from R-Pusat)
+**Expected Result:** PING berhasil (Reply dari R-Pusat)
 
 ### 2. Pengujian Koneksi Internet → Distributed Default Route OSPF
 **Test dari PC1:**
@@ -452,12 +453,12 @@ set servers=4.4.4.3
 
 **Expected Result:** Web server dapat diakses dari kedua lokasi
 
-### 4. Pengujian VPN → Akses Web Langsung ke IP Server
-**Test dari PC-1 (via VPN Office-to-Office):**
+### 4. Pengujian PPTP VPN → Akses Web Langsung ke IP Server
+**Test dari PC-1 (via PPTP VPN Office-to-Office):**
 - Buka browser → http://192.168.12.10
 
-**Test dari PC-2 (via VPN Client-to-Office):**
-- Connect VPN terlebih dahulu
+**Test dari PC-2 (via PPTP VPN Client-to-Office):**
+- Connect PPTP VPN terlebih dahulu
 - Buka browser → http://192.168.12.10
 
 **Expected Result:** Web server dapat diakses langsung via IP internal
@@ -509,11 +510,11 @@ ping 3.3.12.13
 /ip firewall connection print
 ```
 
-### Cek VPN Status - UPDATED
+### Cek PPTP VPN Status
 ```bash
 /ppp active print
-/interface l2tp-client print
-/interface l2tp-server print
+/interface pptp-client print
+/interface pptp-server print
 /ppp profile print
 /ppp secret print
 /ip pool print
@@ -532,41 +533,15 @@ ping 3.3.12.13
 /tool torch interface=ether1
 ```
 
-### Debug VPN Issues
+### Debug PPTP VPN Issues
 ```bash
-/log print where topics~"l2tp"
+/log print where topics~"pptp"
 /log print where topics~"ppp"
-/system logging add topics=l2tp,ppp action=memory
+/system logging add topics=pptp,ppp action=memory
 ```
 
 ---
 
-## PERBEDAAN UTAMA DALAM PERBAIKAN VPN
+**SELESAI - KONFIGURASI LENGKAP MIKROTIK ROUTEROS 7.8**
 
-### Yang Diperbaiki:
-1. **IP Pool VPN:** Dibuat terlebih dahulu sebelum PPP profile
-2. **PPP Profile:** Menggunakan nama pool yang sudah dibuat
-3. **PPP Secrets:** Ditambahkan parameter `service=l2tp`
-4. **NAT Rules:** Ditambahkan NAT untuk VPN pool
-5. **Firewall Rules:** Diurutkan dengan benar untuk VPN access
-6. **Monitoring:** Ditambahkan command untuk debug VPN
-
-### Urutan Konfigurasi yang Benar:
-1. IP Pool → 2. PPP Profile → 3. L2TP Server → 4. PPP Secrets → 5. Routes → 6. NAT → 7. Firewall
-
----
-
-## CATATAN IMPLEMENTASI
-
-1. **Sesuaikan interface names** (ether1, ether2, dst) dengan hardware yang digunakan
-2. **Install web server** di Server (192.168.12.10) - Apache/Nginx
-3. **Test step-by-step** sesuai urutan pengujian project
-4. **Monitor log** jika ada masalah: `/log print`
-5. **Backup konfigurasi** setelah semua berjalan: `/export file=backup`
-6. **Untuk troubleshooting VPN**, gunakan command monitoring VPN yang sudah diperbaiki
-
----
-
-**SELESAI - KONFIGURASI LENGKAP MIKROTIK ROUTEROS 7.8 (FIXED)**
-
-*Project ini mencakup OSPF routing, VPN (Office-to-Office & Client-to-Office), DNS server, port forwarding, dan firewall security dengan perbaikan pada konfigurasi VPN server.*
+*Project ini mencakup OSPF routing, PPTP VPN (Office-to-Office & Client-to-Office), DNS server, port forwarding, dan firewall security. PPTP dipilih untuk kemudahan setup dan kompatibilitas, namun untuk environment production disarankan menggunakan protokol VPN yang lebih aman.*
