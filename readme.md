@@ -1,4 +1,4 @@
-# KONFIGURASI MIKROTIK ROUTEROS 7.8 (BESTO)
+# KONFIGURASI MIKROTIK ROUTEROS 7.8
 ## PROJECT JARINGAN KANTOR - OSPF, VPN, DNS, NAT
 
 ---
@@ -18,20 +18,20 @@
 |--------|-----------|------------|------------|
 | R1 | ETH0 | 12.12.12.1/24 | Link ke R2 |
 | | ETH1 | 13.13.13.1/24 | Link ke R3 |
-| | ETH2 | 1.1.1.1/24 | Ke R-Cabang-1 |
+| | ETH2 | 1.1.0.1/24 | Ke R-Cabang-1 |
 | R2 | ETH0 | 12.12.12.2/24 | Link ke R1 |
 | | ETH1 | 23.23.23.2/24 | Link ke R3 |
-| | ETH2 | 2.2.2.2/24 | Ke R-Cabang-2 |
+| | ETH2 | 2.2.5.2/24 | Ke R-Cabang-2 |
 | R3 | ETH0 | 13.13.13.3/24 | Link ke R1 |
 | | ETH1 | 23.23.23.3/24 | Link ke R2 |
-| | ETH2 | 3.3.05.3/24 | Ke R-Pusat |
+| | ETH2 | 3.3.6.3/24 | Ke R-Pusat |
 | | ETH3 | 4.4.4.3/24 | DNS Network |
 | | ETH4 | DHCP Client | Internet |
-| R-Cabang-1 | ETH0 | 1.1.1.11/24 | Ke R1 |
+| R-Cabang-1 | ETH0 | 1.1.0.11/24 | Ke R1 |
 | | ETH1 | 192.168.0.11/24 | LAN Cabang-1 |
-| R-Cabang-2 | ETH0 | 2.2.2.12/24 | Ke R2 |
+| R-Cabang-2 | ETH0 | 2.2.5.12/24 | Ke R2 |
 | | ETH1 | 192.168.5.12/24 | LAN Cabang-2 |
-| R-Pusat | ETH0 | 3.3.05.13/24 | Public IP |
+| R-Pusat | ETH0 | 3.3.6.13/24 | Public IP |
 | | ETH1 | 192.168.6.13/24 | LAN Pusat |
 
 ---
@@ -49,13 +49,13 @@
 /ip address
 add address=12.12.12.1/24 interface=ether1 comment="Link ke R2"
 add address=13.13.13.1/24 interface=ether2 comment="Link ke R3"
-add address=1.1.1.1/24 interface=ether3 comment="Link ke R-Cabang-1"
+add address=1.1.0.1/24 interface=ether3 comment="Link ke R-Cabang-1"
 ```
 
 ### OSPF Configuration (RouterOS 7.x)
 ```bash
 /routing ospf instance
-add name=default version=2 router-id=1.1.1.1
+add name=default version=2 router-id=1.1.0.1
 
 /routing ospf area
 add name=backbone area-id=0.0.0.0 instance=default
@@ -63,7 +63,7 @@ add name=backbone area-id=0.0.0.0 instance=default
 /routing ospf interface-template
 add area=backbone networks=12.12.12.0/24 comment="Network ke R2"
 add area=backbone networks=13.13.13.0/24 comment="Network ke R3"
-add area=backbone networks=1.1.1.0/24 comment="Network ke R-Cabang-1"
+add area=backbone networks=1.1.0.0/24 comment="Network ke R-Cabang-1"
 ```
 
 ### Firewall Configuration
@@ -91,13 +91,13 @@ add chain=forward action=accept
 /ip address
 add address=12.12.12.2/24 interface=ether1 comment="Link ke R1"
 add address=23.23.23.2/24 interface=ether2 comment="Link ke R3"
-add address=2.2.2.2/24 interface=ether3 comment="Link ke R-Cabang-2"
+add address=2.2.5.2/24 interface=ether3 comment="Link ke R-Cabang-2"
 ```
 
 ### OSPF Configuration
 ```bash
 /routing ospf instance
-add name=default version=2 router-id=2.2.2.2
+add name=default version=2 router-id=2.2.5.2
 
 /routing ospf area
 add name=backbone area-id=0.0.0.0 instance=default
@@ -105,13 +105,13 @@ add name=backbone area-id=0.0.0.0 instance=default
 /routing ospf interface-template
 add area=backbone networks=12.12.12.0/24 comment="Network ke R1"
 add area=backbone networks=23.23.23.0/24 comment="Network ke R3"
-add area=backbone networks=2.2.2.0/24 comment="Network ke R-Cabang-2"
+add area=backbone networks=2.2.5.0/24 comment="Network ke R-Cabang-2"
 ```
 
 ### Firewall Configuration
 ```bash
 /ip firewall filter
-add chain=forward dst-address=192.168.12.0/24 src-address=192.168.2.0/24 action=drop comment="Block direct access to LAN Pusat"
+add chain=forward dst-address=192.168.6.0/24 src-address=192.168.5.0/24 action=drop comment="Block direct access to LAN Pusat"
 add chain=forward connection-state=established,related action=accept
 add chain=forward connection-state=invalid action=drop
 add chain=forward action=accept
@@ -141,7 +141,7 @@ add chain=forward action=accept comment="Allow all other forwarded traffic"
 /ip address
 add address=13.13.13.3/24 interface=ether1 comment="Link ke R1"
 add address=23.23.23.3/24 interface=ether2 comment="Link ke R2"
-add address=3.3.05.3/24 interface=ether3 comment="Link ke R-Pusat"
+add address=3.3.6.3/24 interface=ether3 comment="Link ke R-Pusat"
 add address=4.4.4.3/24 interface=ether4 comment="DNS Server Network"
 ```
 
@@ -156,7 +156,7 @@ add interface=ether5 disabled=no use-peer-dns=yes comment="Internet Connection"
 ### OSPF Configuration
 ```bash
 /routing ospf instance
-add name=default version=2 router-id=3.3.05.3
+add name=default version=2 router-id=3.3.6.3
 
 /routing ospf area
 add name=backbone area-id=0.0.0.0 instance=default
@@ -164,7 +164,7 @@ add name=backbone area-id=0.0.0.0 instance=default
 /routing ospf interface-template
 add area=backbone networks=13.13.13.0/24 comment="Network ke R1"
 add area=backbone networks=23.23.23.0/24 comment="Network ke R2"
-add area=backbone networks=3.3.05.0/24 comment="Network ke R-Pusat"
+add area=backbone networks=3.3.6.0/24 comment="Network ke R-Pusat"
 ```
 
 ### Default Route Distribution
@@ -180,7 +180,7 @@ set default originate-default=always
 set servers=8.8.8.8,8.8.4.4 allow-remote-requests=yes
 
 /ip dns static
-add name=kantorpusat.co.id address=3.3.05.13 comment="Domain untuk R-Pusat"
+add name=kantorpusat.co.id address=3.3.6.13 comment="Domain untuk R-Pusat"
 add name=kantorpusat.co.id address=4.4.4.3 comment="Domain untuk akses dari PC-Public"
 ```
 
@@ -211,11 +211,11 @@ add chain=input action=drop
 ### Port Forwarding di R3
 ```bash
 /ip firewall nat
-add chain=dstnat dst-address=4.4.4.3 dst-port=80 protocol=tcp action=dst-nat to-addresses=192.168.12.10 to-ports=80 comment="Web Server via DNS Server"
+add chain=dstnat dst-address=4.4.4.3 dst-port=80 protocol=tcp action=dst-nat to-addresses=192.168.6.10 to-ports=80 comment="Web Server via DNS Server"
 
 # Pastikan traffic dari PC-Public ke web server diizinkan
 /ip firewall filter
-add chain=forward src-address=4.4.4.0/24 dst-address=192.168.12.10 dst-port=80 protocol=tcp action=accept comment="Allow PC-Public to Web Server"
+add chain=forward src-address=4.4.4.0/24 dst-address=192.168.6.10 dst-port=80 protocol=tcp action=accept comment="Allow PC-Public to Web Server"
 ```
 
 ### Default Route
@@ -229,7 +229,7 @@ add chain=forward src-address=4.4.4.0/24 dst-address=192.168.12.10 dst-port=80 p
 ```bash
 # Di PC-Public, jalankan:
 nslookup kantorpusat.co.id 4.4.4.3
-# Seharusnya menampilkan IP 4.4.4.3 dan/atau 3.3.05.13
+# Seharusnya menampilkan IP 4.4.4.3 dan/atau 3.3.6.13
 
 # Atau coba akses langsung via IP:
 curl http://4.4.4.3
@@ -249,20 +249,20 @@ curl http://4.4.4.3
 ### IP Address Configuration
 ```bash
 /ip address
-add address=1.1.1.11/24 interface=ether1 comment="Link ke R1"
+add address=1.1.0.11/24 interface=ether1 comment="Link ke R1"
 add address=192.168.0.11/24 interface=ether2 comment="LAN Cabang-1"
 ```
 
 ### OSPF Configuration
 ```bash
 /routing ospf instance
-add name=default version=2 router-id=192.168.0.11
+add name=default version=2 router-id=1.1.0.11
 
 /routing ospf area
 add name=backbone area-id=0.0.0.0 instance=default
 
 /routing ospf interface-template
-add area=backbone networks=1.1.1.0/24 comment="Network ke R1"
+add area=backbone networks=1.1.0.0/24 comment="Network ke R1"
 add area=backbone networks=192.168.0.0/24 comment="LAN Cabang-1"
 ```
 
@@ -288,7 +288,7 @@ add chain=srcnat src-address=192.168.0.0/24 action=masquerade comment="Masquerad
 ### VPN Office-to-Office Configuration (PPTP)
 ```bash
 /interface pptp-client
-add name=vpn-to-pusat connect-to=3.3.05.13 user=cabang1 password=cabang1pass disabled=no comment="PPTP VPN Office to Office"
+add name=vpn-to-pusat connect-to=3.3.6.13 user=cabang1 password=cabang1pass disabled=no comment="PPTP VPN Office to Office"
 
 /ip route
 add dst-address=192.168.6.0/24 gateway=vpn-to-pusat comment="Route ke Server via PPTP VPN Office to Office"
@@ -313,20 +313,20 @@ set servers=4.4.4.3
 ### IP Address Configuration
 ```bash
 /ip address
-add address=2.2.2.12/24 interface=ether1 comment="Link ke R2"
+add address=2.2.5.12/24 interface=ether1 comment="Link ke R2"
 add address=192.168.5.12/24 interface=ether2 comment="LAN Cabang-2"
 ```
 
 ### OSPF Configuration
 ```bash
 /routing ospf instance
-add name=default version=2 router-id=192.168.5.12
+add name=default version=2 router-id=2.2.5.12
 
 /routing ospf area
 add name=backbone area-id=0.0.0.0 instance=default
 
 /routing ospf interface-template
-add area=backbone networks=2.2.2.0/24 comment="Network ke R2"
+add area=backbone networks=2.2.5.0/24 comment="Network ke R2"
 add area=backbone networks=192.168.5.0/24 comment="LAN Cabang-2"
 ```
 
@@ -377,20 +377,20 @@ set servers=4.4.4.3
 ### IP Address Configuration
 ```bash
 /ip address
-add address=3.3.05.13/24 interface=ether1 comment="Public IP/NAT"
+add address=3.3.6.13/24 interface=ether1 comment="Public IP/NAT"
 add address=192.168.6.13/24 interface=ether2 comment="LAN Pusat"
 ```
 
 ### OSPF Configuration
 ```bash
 /routing ospf instance
-add name=default version=2 router-id=192.168.6.13
+add name=default version=2 router-id=3.3.6.13
 
 /routing ospf area
 add name=backbone area-id=0.0.0.0 instance=default
 
 /routing ospf interface-template
-add area=backbone networks=3.3.05.0/24 comment="Network ke R3"
+add area=backbone networks=3.3.6.0/24 comment="Network ke R3"
 add area=backbone networks=192.168.6.0/24 comment="LAN Pusat"
 ```
 
@@ -433,7 +433,7 @@ add dst-address=192.168.100.0/24 gateway=192.168.6.13 comment="Route VPN Pool"
 ### Port Forwarding dan NAT
 ```bash
 /ip firewall nat
-add chain=dstnat dst-address=3.3.05.13 dst-port=80 protocol=tcp action=dst-nat to-addresses=192.168.6.10 to-ports=80 comment="Web Server Port Forward"
+add chain=dstnat dst-address=3.3.6.13 dst-port=80 protocol=tcp action=dst-nat to-addresses=192.168.6.10 to-ports=80 comment="Web Server Port Forward"
 add chain=dstnat dst-address=4.4.4.3 dst-port=80 protocol=tcp action=dst-nat to-addresses=192.168.6.10 to-ports=80 comment="DNS Server Port Forward"
 add chain=srcnat src-address=192.168.6.0/24 out-interface=ether1 action=masquerade comment="NAT Pusat to OSPF"
 add chain=srcnat src-address=192.168.6.0/24 action=masquerade comment="Masquerade all traffic from Pusat"
@@ -448,8 +448,8 @@ add chain=input connection-state=invalid action=drop
 
 # Gunakan address-list untuk manajemen yang lebih mudah
 /ip firewall address-list
-add list=allowed-ping address=1.1.1.11 comment="R-Cabang-1"
-add list=allowed-ping address=2.2.2.12 comment="R-Cabang-2"
+add list=allowed-ping address=1.1.0.11 comment="R-Cabang-1"
+add list=allowed-ping address=2.2.5.12 comment="R-Cabang-2"
 add list=allowed-ping address=192.168.0.0/24 comment="LAN Cabang-1"
 add list=allowed-ping address=192.168.5.0/24 comment="LAN Cabang-2"
 
@@ -493,7 +493,7 @@ set servers=4.4.4.3
 - **IP Address:** 192.168.5.10/24
 - **Gateway:** 192.168.5.12
 - **DNS:** 4.4.4.3
-- **PPTP VPN Client:** Connect to 3.3.05.13 (username: pc2user, password: pc2userpass)
+- **PPTP VPN Client:** Connect to 3.3.6.13 (username: pc2user, password: pc2userpass)
 - **VPN Route Configuration:**
   ```
   # Konfigurasi di Windows setelah terhubung VPN
@@ -520,11 +520,11 @@ set servers=4.4.4.3
 ### 1. Pengujian Jaringan OSPF → PING Test
 **Command dari R-Cabang-1:**
 ```bash
-/ping 3.3.05.13 count=5
+/ping 3.3.6.13 count=5
 ```
 **Command dari R-Cabang-2:**
 ```bash
-/ping 3.3.05.13 count=5
+/ping 3.3.6.13 count=5
 ```
 **Expected Result:** PING berhasil (Reply dari R-Pusat)
 
@@ -580,19 +580,19 @@ curl -v http://kantorpusat.co.id
 ### 5. Pengujian Firewall Filter R-Pusat → Selective Ping Access
 **Test dari PC-1:**
 ```bash
-ping 3.3.05.13
+ping 3.3.6.13
 ```
 **Expected:** SUCCESS ✅
 
 **Test dari PC-2:**
 ```bash
-ping 3.3.05.13
+ping 3.3.6.13
 ```
 **Expected:** SUCCESS ✅
 
 **Test dari PC-Publik:**
 ```bash
-ping 3.3.05.13
+ping 3.3.6.13
 ```
 **Expected:** FAILED ❌ (Blocked by firewall)
 
