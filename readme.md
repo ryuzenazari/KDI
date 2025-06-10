@@ -266,18 +266,6 @@ add area=backbone networks=1.1.0.0/24 comment="Network ke R1"
 add area=backbone networks=192.168.0.0/24 comment="LAN Cabang-1"
 ```
 
-### DHCP Server Configuration
-```bash
-/ip pool
-add name=pool-cabang1 ranges=192.168.0.20-192.168.0.100
-
-/ip dhcp-server
-add name=dhcp-cabang1 interface=ether2 address-pool=pool-cabang1 disabled=no
-
-/ip dhcp-server network
-add address=192.168.0.0/24 gateway=192.168.0.11 dns-server=4.4.4.3 comment="DHCP Network Cabang-1"
-```
-
 ### NAT Configuration
 ```bash
 /ip firewall nat
@@ -339,18 +327,6 @@ add chain=forward connection-state=invalid action=drop
 add chain=forward action=accept comment="Allow all other forwarded traffic"
 ```
 
-### DHCP Server Configuration
-```bash
-/ip pool
-add name=pool-cabang2 ranges=192.168.5.20-192.168.5.100
-
-/ip dhcp-server
-add name=dhcp-cabang2 interface=ether2 address-pool=pool-cabang2 disabled=no
-
-/ip dhcp-server network
-add address=192.168.5.0/24 gateway=192.168.5.12 dns-server=4.4.4.3 comment="DHCP Network Cabang-2"
-```
-
 ### NAT Configuration
 ```bash
 /ip firewall nat
@@ -392,18 +368,6 @@ add name=backbone area-id=0.0.0.0 instance=default
 /routing ospf interface-template
 add area=backbone networks=3.3.6.0/24 comment="Network ke R3"
 add area=backbone networks=192.168.6.0/24 comment="LAN Pusat"
-```
-
-### DHCP Server Configuration
-```bash
-/ip pool
-add name=pool-pusat ranges=192.168.6.20-192.168.6.100
-
-/ip dhcp-server
-add name=dhcp-pusat interface=ether2 address-pool=pool-pusat disabled=no
-
-/ip dhcp-server network
-add address=192.168.6.0/24 gateway=192.168.6.13 dns-server=4.4.4.3 comment="DHCP Network Pusat"
 ```
 
 ### VPN PPTP Server Configuration
